@@ -19,11 +19,12 @@ dependencies:
 
 
   cancellable: ^2.0.0
-  anlifecycle: ^2.0.2
-  an_lifecycle_cancellable: ^0.0.3
+  anlifecycle: ^2.0.3
+  an_lifecycle_cancellable: ^0.0.4
   weak_collections: ^1.1.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0
+
 
 flutter:
