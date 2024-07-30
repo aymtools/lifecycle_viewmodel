@@ -69,37 +69,51 @@ class ViewModelStore {
 }
 
 typedef ViewModelFactory<T extends ViewModel> = T Function();
+typedef ViewModelFactory2<T extends ViewModel> = T Function(Lifecycle);
 
 class _ViewModelDefFactories {
   static final _ViewModelDefFactories _instance = _ViewModelDefFactories();
 
-  final Map<Type, ViewModelFactory> _factoryMap = {};
+  final Map<Type, Function> _factoryMap = {};
 
-  void addFactory<T extends ViewModel>(ViewModelFactory<T> factory) {
-    _factoryMap[T] = factory;
+  void addFactory<T extends ViewModel>(ViewModelFactory<T> factory) =>
+      _factoryMap[T] = factory;
+
+  void addFactory2<T extends ViewModel>(ViewModelFactory2 factory) =>
+      _factoryMap[T] = factory;
+}
+
+VM _getOrCreate<VM extends ViewModel>(
+    Map<Type, Function> factoryMap, Lifecycle lifecycle) {
+  late VM vm;
+  Function factory = factoryMap[VM] as Function;
+  if (factory is ViewModelFactory<VM>) {
+    vm = factory();
+  } else if (factory is ViewModelFactory2<VM>) {
+    vm = factory(lifecycle);
   }
+  return vm;
 }
 
 class ViewModelProvider {
   final ViewModelStore _viewModelStore;
-  final Map<Type, ViewModelFactory> _factoryMap = {};
+  final Lifecycle _lifecycle;
+  final Map<Type, Function> _factoryMap = {};
 
-  ViewModelProvider(this._viewModelStore);
+  ViewModelProvider(this._viewModelStore, this._lifecycle);
 
   T get<T extends ViewModel>() {
     var vm = _viewModelStore.get(T.toString());
     if (vm != null && vm is T) return vm;
 
     if (_factoryMap.containsKey(T)) {
-      ViewModelFactory<T> factory = _factoryMap[T] as ViewModelFactory<T>;
-      vm = factory();
+      T vm = _getOrCreate(_factoryMap, _lifecycle);
       _viewModelStore.put(T.toString(), vm);
       return vm;
     }
     if (_ViewModelDefFactories._instance._factoryMap.containsKey(T)) {
-      ViewModelFactory<T> factory = _ViewModelDefFactories
-          ._instance._factoryMap[T] as ViewModelFactory<T>;
-      vm = factory();
+      T vm = _getOrCreate(
+          _ViewModelDefFactories._instance._factoryMap, _lifecycle);
       _viewModelStore.put(T.toString(), vm);
       return vm;
     }
@@ -109,8 +123,15 @@ class ViewModelProvider {
   addFactory<T extends ViewModel>(ViewModelFactory<T> factory) =>
       _factoryMap[T] = factory;
 
+  addFactory2<T extends ViewModel>(ViewModelFactory2<T> factory) =>
+      _factoryMap[T] = factory;
+
   static void addDefFactory<T extends ViewModel>(ViewModelFactory<T> factory) =>
       _ViewModelDefFactories._instance.addFactory(factory);
+
+  static void addDefFactory2<T extends ViewModel>(
+          ViewModelFactory2<T> factory) =>
+      _ViewModelDefFactories._instance.addFactory2(factory);
 
   static ViewModelProvider Function(LifecycleObserverRegistry)?
       _viewModelProviderProducer;
@@ -131,7 +152,8 @@ class ViewModelProvider {
       viewModelProviderProducer<LifecycleRouteOwnerState>();
 
   static void viewModelProviderProducerByApp() =>
-      viewModelProviderProducer<LifecycleAppOwnerState>();
+      viewModelProviderProducer<LifecycleAppOwnerState>(
+          testLifecycleOwner: (owner) => owner.lifecycle.parent == null);
 }
 
 extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
@@ -146,34 +168,51 @@ extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
     assert(currentLifecycleState > LifecycleState.destroyed,
         'Must be used before destroyed.');
     return lifecycleExtData.putIfAbsent(TypedKey<ViewModelProvider>(),
-        () => ViewModelProvider(getViewModelStore()));
+        () => ViewModelProvider(getViewModelStore(), lifecycle));
   }
 
-  T viewModels<T extends ViewModel>({ViewModelFactory<T>? factory}) {
+  T viewModels<T extends ViewModel>(
+      {ViewModelFactory<T>? factory, ViewModelFactory2<T>? factory2}) {
     final provider = ViewModelProvider._viewModelProviderProducer == null
         ? getViewModelProvider()
         : ViewModelProvider._viewModelProviderProducer!.call(this);
     if (factory != null) {
       provider.addFactory(factory);
     }
+    if (factory2 != null) {
+      provider.addFactory2(factory2);
+    }
     return provider.get<T>();
   }
 
-  T viewModelsByRoute<T extends ViewModel>({ViewModelFactory<T>? factory}) =>
-      viewModelsByLifecycleOwner<T, LifecycleRouteOwnerState>(factory: factory);
+  T viewModelsByRoute<T extends ViewModel>({
+    ViewModelFactory<T>? factory,
+    ViewModelFactory2<T>? factory2,
+  }) =>
+      viewModelsByLifecycleOwner<T, LifecycleRouteOwnerState>(
+          factory: factory, factory2: factory2);
 
-  T viewModelsByApp<T extends ViewModel>({ViewModelFactory<T>? factory}) =>
+  T viewModelsByApp<T extends ViewModel>({
+    ViewModelFactory<T>? factory,
+    ViewModelFactory2<T>? factory2,
+  }) =>
       viewModelsByLifecycleOwner<T, LifecycleAppOwnerState>(
           factory: factory,
+          factory2: factory2,
           testLifecycleOwner: (owner) => owner.lifecycle.parent == null);
 
   T viewModelsByLifecycleOwner<T extends ViewModel,
           LO extends LifecycleOwnerStateMixin>(
-      {ViewModelFactory<T>? factory, bool Function(LO)? testLifecycleOwner}) {
+      {ViewModelFactory<T>? factory,
+      ViewModelFactory2<T>? factory2,
+      bool Function(LO)? testLifecycleOwner}) {
     final provider =
         _getViewModelProvider<LO>(testLifecycleOwner: testLifecycleOwner);
     if (factory != null) {
       provider.addFactory(factory);
+    }
+    if (factory2 != null) {
+      provider.addFactory2(factory2);
     }
     return provider.get<T>();
   }
