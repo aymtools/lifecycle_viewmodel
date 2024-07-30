@@ -111,6 +111,27 @@ class ViewModelProvider {
 
   static void addDefFactory<T extends ViewModel>(ViewModelFactory<T> factory) =>
       _ViewModelDefFactories._instance.addFactory(factory);
+
+  static ViewModelProvider Function(LifecycleObserverRegistry)?
+      _viewModelProviderProducer;
+
+  static void viewModelProviderProducer<LO extends LifecycleOwnerStateMixin>(
+      {bool Function(LO)? testLifecycleOwner}) {
+    assert(_viewModelProviderProducer == null);
+    _viewModelProviderProducer = (lifecycle) {
+      final owner = lifecycle._findLifecycleOwner<LO>(test: testLifecycleOwner);
+      if (owner == null) {
+        throw 'cannot find $LO';
+      }
+      return owner.getViewModelProvider();
+    };
+  }
+
+  static void viewModelProviderProducerByRoute() =>
+      viewModelProviderProducer<LifecycleRouteOwnerState>();
+
+  static void viewModelProviderProducerByApp() =>
+      viewModelProviderProducer<LifecycleAppOwnerState>();
 }
 
 extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
@@ -129,7 +150,9 @@ extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
   }
 
   T viewModels<T extends ViewModel>({ViewModelFactory<T>? factory}) {
-    final provider = getViewModelProvider();
+    final provider = ViewModelProvider._viewModelProviderProducer == null
+        ? getViewModelProvider()
+        : ViewModelProvider._viewModelProviderProducer!.call(this);
     if (factory != null) {
       provider.addFactory(factory);
     }
