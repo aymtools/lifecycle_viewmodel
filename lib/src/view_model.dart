@@ -156,7 +156,7 @@ class ViewModelProvider {
           testLifecycleOwner: (owner) => owner.lifecycle.parent == null);
 }
 
-extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
+extension ViewModelStoreOwnerExtension on LifecycleOwnerStateMixin {
   ViewModelStore getViewModelStore() =>
       lifecycleExtData.putIfAbsent(TypedKey<ViewModelStore>(), () {
         final store = ViewModelStore();
@@ -170,11 +170,13 @@ extension ViewModelStoreOwnerExtension on LifecycleObserverRegistry {
     return lifecycleExtData.putIfAbsent(TypedKey<ViewModelProvider>(),
         () => ViewModelProvider(getViewModelStore(), lifecycle));
   }
+}
 
+extension ViewModelRegistryExtension on LifecycleObserverRegistry {
   T viewModels<T extends ViewModel>(
       {ViewModelFactory<T>? factory, ViewModelFactory2<T>? factory2}) {
     final provider = ViewModelProvider._viewModelProviderProducer == null
-        ? getViewModelProvider()
+        ? _getViewModelProvider()
         : ViewModelProvider._viewModelProviderProducer!.call(this);
     if (factory != null) {
       provider.addFactory(factory);
