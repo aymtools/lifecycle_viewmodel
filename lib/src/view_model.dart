@@ -139,8 +139,8 @@ class ViewModelProvider {
   static void viewModelProviderProducer<LO extends LifecycleOwnerStateMixin>(
       {bool Function(LO)? testLifecycleOwner}) {
     assert(_viewModelProviderProducer == null);
-    _viewModelProviderProducer = (lifecycle) {
-      final owner = lifecycle._findLifecycleOwner<LO>(test: testLifecycleOwner);
+    _viewModelProviderProducer = (registry) {
+      final owner = registry._findLifecycleOwner<LO>(test: testLifecycleOwner);
       if (owner == null) {
         throw 'cannot find $LO';
       }
@@ -172,12 +172,47 @@ extension ViewModelStoreOwnerExtension on LifecycleOwnerStateMixin {
   }
 }
 
-extension ViewModelRegistryExtension on LifecycleObserverRegistry {
+extension _ViewModelRegistryExtension on ILifecycleRegistry {
+  ViewModelProvider _getViewModelProvider<LO extends LifecycleOwnerStateMixin>(
+      {bool Function(LO)? testLifecycleOwner}) {
+    final owner = _findLifecycleOwner<LO>(test: testLifecycleOwner);
+    if (owner == null) {
+      throw 'cannot find $LO';
+    }
+    return owner.getViewModelProvider();
+  }
+
+  LO? _findLifecycleOwner<LO extends LifecycleOwnerStateMixin>(
+      {bool Function(LO)? test}) {
+    Lifecycle? life = lifecycle;
+    if (test == null) {
+      while (life != null) {
+        if (life.owner is LO) {
+          return (life.owner as LO);
+        }
+        life = life.parent;
+      }
+      return null;
+    }
+    while (life != null) {
+      if (life.owner is LO && test((life.owner as LO))) {
+        return (life.owner as LO);
+      }
+      life = life.parent;
+    }
+    return null;
+  }
+}
+
+extension ViewModelLifecycleExtension on ILifecycle {
   T viewModels<T extends ViewModel>(
       {ViewModelFactory<T>? factory, ViewModelFactory2<T>? factory2}) {
+
+    final ILifecycleRegistry registry = toLifecycleRegistry();
+
     final provider = ViewModelProvider._viewModelProviderProducer == null
-        ? _getViewModelProvider()
-        : ViewModelProvider._viewModelProviderProducer!.call(this);
+        ? registry._getViewModelProvider()
+        : ViewModelProvider._viewModelProviderProducer!.call(registry);
     if (factory != null) {
       provider.addFactory(factory);
     }
@@ -208,8 +243,10 @@ extension ViewModelRegistryExtension on LifecycleObserverRegistry {
       {ViewModelFactory<T>? factory,
       ViewModelFactory2<T>? factory2,
       bool Function(LO)? testLifecycleOwner}) {
-    final provider =
-        _getViewModelProvider<LO>(testLifecycleOwner: testLifecycleOwner);
+    final ILifecycleRegistry registry = toLifecycleRegistry();
+
+    final provider = registry._getViewModelProvider<LO>(
+        testLifecycleOwner: testLifecycleOwner);
     if (factory != null) {
       provider.addFactory(factory);
     }
@@ -217,38 +254,5 @@ extension ViewModelRegistryExtension on LifecycleObserverRegistry {
       provider.addFactory2(factory2);
     }
     return provider.get<T>();
-  }
-
-  ViewModelProvider _getViewModelProvider<LO extends LifecycleOwnerStateMixin>(
-      {bool Function(LO)? testLifecycleOwner}) {
-    final owner = _findLifecycleOwner<LO>(test: testLifecycleOwner);
-    if (owner == null) {
-      throw 'cannot find $LO';
-    }
-    return owner.getViewModelProvider();
-  }
-
-  LO? _findLifecycleOwner<LO extends LifecycleOwnerStateMixin>(
-      {bool Function(LO)? test}) {
-    if (test == null) {
-      Lifecycle? life = lifecycle;
-      while (life != null) {
-        if (life is LifecycleRegistry && life.provider is LO) {
-          return (life.provider as LO);
-        }
-        life = life.parent;
-      }
-      return null;
-    }
-    Lifecycle? life = lifecycle;
-    while (life != null) {
-      if (life is LifecycleRegistry &&
-          life.provider is LO &&
-          test((life.provider as LO))) {
-        return (life.provider as LO);
-      }
-      life = life.parent;
-    }
-    return null;
   }
 }
