@@ -1,17 +1,20 @@
-A package for managing ViewModel that depends on anlifecycle. Similar to Androidx ViewModel.
+import 'dart:async';
 
-## Usage
+import 'package:an_lifecycle_cancellable/an_lifecycle_cancellable.dart';
+import 'package:an_lifecycle_viewmodel/an_lifecycle_viewmodel.dart';
+import 'package:anlifecycle/anlifecycle.dart';
+import 'package:flutter/material.dart';
 
-#### 1.1 Prepare the lifecycle environment.
-
-```dart
+void main() {
+  ViewModelProvider.addDefFactory2(ViewModelHome.new);
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Use LifecycleApp to wrap the default App
     return LifecycleApp(
       child: MaterialApp(
         title: 'Lifecycle ViewModel Demo',
@@ -19,20 +22,13 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
         ),
         navigatorObservers: [
-          //Use LifecycleNavigatorObserver.hookMode() to register routing event changes
           LifecycleNavigatorObserver.hookMode(),
         ],
-        home: const MyHomePage(title: 'Lifecycle ViewModel Home Page'),
+        home: const MyHomePage(title: 'Lifecycle ViewModel Demo Home Page'),
       ),
     );
   }
 }
-```
-
-#### 1.2 Use viewModels<VM> To inject or get the currently existing ViewModel
-
-```dart
-
 
 class ViewModelHome with ViewModel {
   final ValueNotifier<int> counter = ValueNotifier<int>(0);
@@ -100,10 +96,7 @@ class _MyHomePageState extends State<MyHomePage>
             ),
             Text(
               '${viewModel.counter.value}',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headlineMedium,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
@@ -134,12 +127,3 @@ class _HomeFloatingButtonState extends State<HomeFloatingButton>
     );
   }
 }
-```
-
-## Additional information
-
-See [anlifecycle](https://github.com/aymtools/lifecycle/)
-
-See [cancelable](https://github.com/aymtools/cancelable/)
-
-See [an_lifecycle_cancellable](https://github.com/aymtools/lifecycle_cancellable/)
