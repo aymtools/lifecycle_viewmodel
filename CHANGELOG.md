@@ -1,3 +1,8 @@
+## 1.1.0
+
+* ViewModels extension can directly specify the ViewModelProvider.
+* Added a new extension for directly working with state: viewModelsOfState.
+
 ## 1.0.1
 
 * Fix type exception in addDefFactory2.

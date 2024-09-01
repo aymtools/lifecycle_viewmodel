@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     // Use LifecycleApp to wrap the default App
     return LifecycleApp(
       child: MaterialApp(
-        title: 'Lifecycle ViewModel Demo',
+        title: 'ViewModel Demo',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
@@ -22,14 +22,18 @@ class MyApp extends StatelessWidget {
           //Use LifecycleNavigatorObserver.hookMode() to register routing event changes
           LifecycleNavigatorObserver.hookMode(),
         ],
-        home: const MyHomePage(title: 'Lifecycle ViewModel Home Page'),
+        home: const MyHomePage(title: 'ViewModel Home Page'),
       ),
     );
   }
 }
 ```
 
-#### 1.2 Use viewModels<VM> To inject or get the currently existing ViewModel
+The current usage of PageView and TabBarViewPageView should be replaced with LifecyclePageView and
+LifecycleTabBarView. Alternatively, you can wrap the items with LifecyclePageViewItem. You can refer
+to [anlifecycle](https://pub.dev/packages/anlifecycle) for guidance.
+
+#### 1.2 Use viewModelsOfState<VM> To inject or get the currently existing ViewModel
 
 ```dart
 
@@ -38,6 +42,7 @@ class ViewModelHome with ViewModel {
   final ValueNotifier<int> counter = ValueNotifier<int>(0);
 
   ViewModelHome(Lifecycle lifecycle) {
+    /// Associate the ValueNotifier with the Lifecycle, and automatically call dispose when the lifecycle ends.
     counter.bindLifecycle(lifecycle);
   }
 
@@ -55,32 +60,9 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with LifecycleRegistryStateMixin {
-  late final ValueNotifier<int> stayed = ValueNotifier(0);
-
-  late final ViewModelHome viewModel = viewModels();
-
-  // 也可使用 当前注册的构建工厂
-  // final viewModel =
-  //     useLifecycleViewModelEffect<ViewModelHome>(factory2: ViewModelHome.new);
-  // late final ViewModelHome viewModel = viewModels(factory2: ViewModelHome.new);
-
-  @override
-  void initState() {
-    super.initState();
-    stayed
-        .bindLifecycle(this)
-        .addCListener(makeLiveCancellable(), () => setState(() {}));
-
-    // 只有可见时统计时间 不可见时不统计
-    Stream.periodic(const Duration(seconds: 1))
-        .bindLifecycle(this, repeatLastOnRestart: true)
-        .listen((event) => stayed.value++);
-
-    viewModel.counter
-        .addCListener(makeLiveCancellable(), () => setState(() {}));
-  }
+class _MyHomePageState extends State<MyHomePage> {
+  // Retrieve the ViewModel in the current environment.
+  late final ViewModelHome viewModel = viewModelsOfState(factory2: ViewModelHome.new);
 
   @override
   Widget build(BuildContext context) {
@@ -92,18 +74,19 @@ class _MyHomePageState extends State<MyHomePage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'Stayed on this page for:${stayed.value} s',
-            ),
             const Text(
               'You have pushed the button this many times:',
             ),
-            Text(
-              '${viewModel.counter.value}',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headlineMedium,
+            AnimatedBuilder(
+              animation: viewModel.counter,
+              builder: (_, __) =>
+                  Text(
+                    '${viewModel.counter.value}',
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .headlineMedium,
+                  ),
             ),
           ],
         ),
@@ -113,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage>
   }
 }
 
-/// 模拟子控件
+/// Simulate child widgets.
 class HomeFloatingButton extends StatefulWidget {
   const HomeFloatingButton({super.key});
 
@@ -121,12 +104,12 @@ class HomeFloatingButton extends StatefulWidget {
   State<HomeFloatingButton> createState() => _HomeFloatingButtonState();
 }
 
-class _HomeFloatingButtonState extends State<HomeFloatingButton>
-    with LifecycleRegistryStateMixin {
+class _HomeFloatingButtonState extends State<HomeFloatingButton> {
+  //Retrieve the ViewModel in the current environment.
+  late final vm = viewModelsOfState<ViewModelHome>();
+
   @override
   Widget build(BuildContext context) {
-    //获取vm
-    final vm = viewModels<ViewModelHome>();
     return FloatingActionButton(
       onPressed: vm.incrementCounter,
       tooltip: 'Increment',
@@ -134,6 +117,7 @@ class _HomeFloatingButtonState extends State<HomeFloatingButton>
     );
   }
 }
+
 ```
 
 ## Additional information
