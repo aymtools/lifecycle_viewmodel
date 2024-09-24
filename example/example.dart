@@ -58,6 +58,15 @@ class _MyHomePageState extends State<MyHomePage> {
   //     useLifecycleViewModelEffect<ViewModelHome>(factory2: ViewModelHome.new);
   // late final ViewModelHome viewModel = viewModels(factory2: ViewModelHome.new);
 
+  // 从路由页来缓存 ViewModel
+  // late final ViewModelHome viewModel1 = viewModelsByRouteOfState();
+
+  // 从App 全局来缓存 ViewModel
+  // late final ViewModelHome viewModel1 = viewModelsByAppOfState();
+
+  // 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
+  // late final ViewModelHome viewModel1 = viewModelsByRefOfState();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

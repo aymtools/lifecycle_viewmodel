@@ -1,3 +1,8 @@
+## 1.2.0
+
+* The new viewModelsByRef retrieves the same instance when there are references; when there are no
+  references, it will clean up the ViewModel.
+
 ## 1.1.0
 
 * ViewModels extension can directly specify the ViewModelProvider.

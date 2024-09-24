@@ -57,6 +57,15 @@ class ViewModelStore {
     return mMap[key];
   }
 
+  /// 获取ViewModel
+  ViewModel? remove(String key) {
+    ViewModel? oldViewModel = mMap.remove(key);
+    if (oldViewModel != null) {
+      oldViewModel.onCleared();
+    }
+    return oldViewModel;
+  }
+
   /// 当前已存在的KEY
   Set<String> keys() {
     return Set.of(mMap.keys);
@@ -89,18 +98,6 @@ class _ViewModelDefFactories {
       _factoryMap[VM] = factory;
 }
 
-VM _getOrCreate<VM extends ViewModel>(
-    Map<Type, Function> factoryMap, Lifecycle lifecycle) {
-  late VM vm;
-  Function factory = factoryMap[VM] as Function;
-  if (factory is ViewModelFactory<VM>) {
-    vm = factory();
-  } else if (factory is ViewModelFactory2<VM>) {
-    vm = factory(lifecycle);
-  }
-  return vm;
-}
-
 /// 用来管理如何创建ViewModel
 class ViewModelProvider {
   final ViewModelStore _viewModelStore;
@@ -111,18 +108,13 @@ class ViewModelProvider {
 
   /// 使用当前的Provider获取或创建一个 ViewModel
   VM get<VM extends ViewModel>() {
-    var vm = _viewModelStore.get(VM.toString());
-    if (vm != null && vm is VM) return vm;
-
-    if (_factoryMap.containsKey(VM)) {
-      VM vm = _getOrCreate(_factoryMap, _lifecycle);
-      _viewModelStore.put(VM.toString(), vm);
-      return vm;
-    }
-    if (_ViewModelDefFactories._instance._factoryMap.containsKey(VM)) {
-      VM vm = _getOrCreate(
-          _ViewModelDefFactories._instance._factoryMap, _lifecycle);
-      _viewModelStore.put(VM.toString(), vm);
+    final vmKey = VM.toString();
+    var vmCache = _viewModelStore.get(vmKey);
+    if (vmCache != null && vmCache is VM) return vmCache;
+    VM? vm = ViewModelProvider.newInstanceViewModel(_lifecycle,
+        factories: _factoryMap);
+    if (vm != null) {
+      _viewModelStore.put(vmKey, vm);
       return vm;
     }
     throw 'cannot find $VM factory';
@@ -169,6 +161,29 @@ class ViewModelProvider {
   static void viewModelProviderProducerByApp() =>
       viewModelProviderProducer<LifecycleAppOwnerState>(
           testLifecycleOwner: (owner) => owner.lifecycle.parent == null);
+
+  static VM? newInstanceViewModel<VM extends ViewModel>(Lifecycle lifecycle,
+      {Map<Type, Function>? factories}) {
+    VM? result;
+    if (factories != null) {
+      result = _newInstanceViewModel<VM>(factories, lifecycle);
+    }
+    result ??= _newInstanceViewModel<VM>(
+        _ViewModelDefFactories._instance._factoryMap, lifecycle);
+    return result;
+  }
+}
+
+VM? _newInstanceViewModel<VM extends ViewModel>(
+    Map<Type, Function> factories, Lifecycle lifecycle) {
+  VM? vm;
+  Function factory = factories[VM] as Function;
+  if (factory is ViewModelFactory<VM>) {
+    vm = factory();
+  } else if (factory is ViewModelFactory2<VM>) {
+    vm = factory(lifecycle);
+  }
+  return vm;
 }
 
 extension ViewModelProviderViewModelsExt on ViewModelProvider {
