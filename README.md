@@ -33,7 +33,7 @@ The current usage of PageView and TabBarViewPageView should be replaced with Lif
 LifecycleTabBarView. Alternatively, you can wrap the items with LifecyclePageViewItem. You can refer
 to [anlifecycle](https://pub.dev/packages/anlifecycle) for guidance.
 
-#### 1.2 Use viewModelsOfState<VM> To inject or get the currently existing ViewModel
+#### 1.2 Use viewModels<VM> To inject or get the currently existing ViewModel
 
 ```dart
 
@@ -51,24 +51,21 @@ class ViewModelHome with ViewModel {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+
+class MyHomePage extends StatelessWidget {
   final String title;
 
   const MyHomePage({super.key, required this.title});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  // Retrieve the ViewModel in the current environment.
-  late final ViewModelHome viewModel = viewModelsOfState(factory2: ViewModelHome.new);
-
-  @override
   Widget build(BuildContext context) {
+    // Retrieve the ViewModel in the current environment.
+    final ViewModelHome viewModel =
+    context.viewModels(factory2: ViewModelHome.new);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(title),
       ),
       body: Center(
         child: Column(

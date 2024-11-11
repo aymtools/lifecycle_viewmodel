@@ -318,6 +318,48 @@ extension ViewModelLifecycleExtension on ILifecycle {
               testLifecycleOwner: testLifecycleOwner));
 }
 
+extension ViewModelsOfBuildContextExt on BuildContext {
+  /// 获取最近的指定的 viewModelProvider 可提供的 ViewModel
+  VM viewModels<VM extends ViewModel>(
+      {ViewModelFactory<VM>? factory,
+      ViewModelFactory2<VM>? factory2,
+      ViewModelProvider Function(LifecycleOwner lifecycleOwner)?
+          viewModelProvider}) {
+    Lifecycle? lifecycle;
+    assert(() {
+      /// 抑制掉 assert 时的异常
+      try {
+        lifecycle = Lifecycle.of(this);
+      } catch (_) {
+        lifecycle = Lifecycle.of(this, listen: false);
+      }
+      return true;
+    }());
+
+    lifecycle ??= Lifecycle.of(this);
+    return lifecycle!.viewModels(
+        factory: factory,
+        factory2: factory2,
+        viewModelProvider: viewModelProvider);
+  }
+
+  /// 获取最近的Route提供的 viewModelProvider 来获取 ViewModel
+  VM viewModelsByRoute<VM extends ViewModel>(
+          {ViewModelFactory<VM>? factory, ViewModelFactory2<VM>? factory2}) =>
+      viewModels(
+          factory: factory,
+          factory2: factory2,
+          viewModelProvider: (owner) => owner.getViewModelProviderByRoute());
+
+  /// 获取基于App的ViewModel
+  VM viewModelsByApp<VM extends ViewModel>(
+          {ViewModelFactory<VM>? factory, ViewModelFactory2<VM>? factory2}) =>
+      viewModels(
+          factory: factory,
+          factory2: factory2,
+          viewModelProvider: (owner) => owner.getViewModelProviderByApp());
+}
+
 extension ViewModelsState<T extends StatefulWidget> on State<T> {
   /// 获取最近的指定的 viewModelProvider 可提供的 ViewModel
   VM viewModelsOfState<VM extends ViewModel>(
@@ -333,20 +375,7 @@ extension ViewModelsState<T extends StatefulWidget> on State<T> {
     }
     assert(mounted);
 
-    Lifecycle? lifecycle;
-
-    assert(() {
-      /// 抑制掉 assert 时的异常
-      try {
-        lifecycle = Lifecycle.of(context);
-      } catch (_) {
-        lifecycle = Lifecycle.of(context, listen: false);
-      }
-      return true;
-    }());
-
-    lifecycle ??= Lifecycle.of(context);
-    return lifecycle!.viewModels(
+    return context.viewModels(
         factory: factory,
         factory2: factory2,
         viewModelProvider: viewModelProvider);

@@ -96,28 +96,6 @@ extension _LifecycleRefViewModelProviderVMCancellableExt on Lifecycle {
           () => makeLiveCancellable());
 }
 
-extension ViewModelsByRefOfStateExt<W extends StatefulWidget> on State<W> {
-  /// 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
-  /// - factory2 回传的lifecycle是 首次创建的时候使用lifecycle 会存在lifecycle销毁但是vm依然需要生存的状态
-  /// 对于回收不建议使用lifecycle参数 推荐使用VM的 [onCleared] [addCloseable] [onDispose]
-  VM viewModelsByRefOfState<VM extends ViewModel>(
-      {ViewModelFactory<VM>? factory, ViewModelFactory2<VM>? factory2}) {
-    Lifecycle? lifecycle;
-    assert(() {
-      /// 抑制掉 assert 时的异常
-      try {
-        lifecycle = Lifecycle.of(context);
-      } catch (_) {
-        lifecycle = Lifecycle.of(context, listen: false);
-      }
-      return true;
-    }());
-    lifecycle ??= Lifecycle.of(context);
-
-    return lifecycle!.viewModelsByRef<VM>(factory: factory, factory2: factory2);
-  }
-}
-
 extension ViewModelByRefExt on ILifecycle {
   /// 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
   /// - factory2 回传的lifecycle是 首次创建的时候使用lifecycle 会存在lifecycle销毁但是vm依然需要生存的状态
@@ -127,5 +105,42 @@ extension ViewModelByRefExt on ILifecycle {
     final vmx = viewModelsByApp<RefViewModelProvider>(
         factory: RefViewModelProvider.new);
     return vmx.getOrCreate(toLifecycle(), factory: factory, factory2: factory2);
+  }
+}
+
+extension ViewModelsByRefOfBuildContextExt on BuildContext {
+  /// 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
+  /// - factory2 回传的lifecycle是 首次创建的时候使用lifecycle 会存在lifecycle销毁但是vm依然需要生存的状态
+  /// 对于回收不建议使用lifecycle参数 推荐使用VM的 [onCleared] [addCloseable] [onDispose]
+  VM viewModelsByRef<VM extends ViewModel>(
+      {ViewModelFactory<VM>? factory, ViewModelFactory2<VM>? factory2}) {
+    Lifecycle? lifecycle;
+    assert(() {
+      /// 抑制掉 assert 时的异常
+      try {
+        lifecycle = Lifecycle.of(this);
+      } catch (_) {
+        lifecycle = Lifecycle.of(this, listen: false);
+      }
+      return true;
+    }());
+    lifecycle ??= Lifecycle.of(this);
+
+    return lifecycle!.viewModelsByRef<VM>(factory: factory, factory2: factory2);
+  }
+}
+
+extension ViewModelsByRefOfStateExt<W extends StatefulWidget> on State<W> {
+  /// 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
+  /// - factory2 回传的lifecycle是 首次创建的时候使用lifecycle 会存在lifecycle销毁但是vm依然需要生存的状态
+  /// 对于回收不建议使用lifecycle参数 推荐使用VM的 [onCleared] [addCloseable] [onDispose]
+  VM viewModelsByRefOfState<VM extends ViewModel>(
+      {ViewModelFactory<VM>? factory, ViewModelFactory2<VM>? factory2}) {
+    if (this is ILifecycleRegistry) {
+      return (this as ILifecycleRegistry)
+          .viewModelsByRef(factory: factory, factory2: factory2);
+    }
+    assert(mounted);
+    return context.viewModelsByRef(factory: factory, factory2: factory2);
   }
 }

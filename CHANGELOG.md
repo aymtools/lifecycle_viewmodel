@@ -1,3 +1,7 @@
+## 1.3.0
+
+* Provide extended viewModels for BuildContext to simplify usage.
+
 ## 1.2.0
 
 * The new viewModelsByRef retrieves the same instance when there are references; when there are no

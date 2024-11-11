@@ -4,6 +4,7 @@ import 'package:anlifecycle/anlifecycle.dart';
 import 'package:flutter/material.dart';
 
 void main() {
+  /// 提前声明 ViewModelHome的创建方式
   ViewModelProvider.addDefFactory2(ViewModelHome.new);
   runApp(const MyApp());
 }
@@ -40,38 +41,32 @@ class ViewModelHome with ViewModel {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends StatelessWidget {
   final String title;
 
   const MyHomePage({super.key, required this.title});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  // 获取当前环境下的ViewModel
-  late final ViewModelHome viewModel = viewModelsOfState();
-
-  // 也可使用 当前注册的构建工厂
-  // final viewModel =
-  //     useLifecycleViewModelEffect<ViewModelHome>(factory2: ViewModelHome.new);
-  // late final ViewModelHome viewModel = viewModels(factory2: ViewModelHome.new);
-
-  // 从路由页来缓存 ViewModel
-  // late final ViewModelHome viewModel1 = viewModelsByRouteOfState();
-
-  // 从App 全局来缓存 ViewModel
-  // late final ViewModelHome viewModel1 = viewModelsByAppOfState();
-
-  // 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
-  // late final ViewModelHome viewModel1 = viewModelsByRefOfState();
-
-  @override
   Widget build(BuildContext context) {
+    // 获取当前环境下的ViewModel
+    final ViewModelHome viewModel = context.viewModels();
+
+    // 也可使用 当前提供的构建工厂
+    // final ViewModelHome viewModel =
+    //     context.viewModels(factory2: ViewModelHome.new);
+
+    // 从路由页来缓存 ViewModel
+    // final ViewModelHome viewModel1 = context.viewModelsByRoute();
+
+    // 从App 全局来缓存 ViewModel
+    // final ViewModelHome viewModel1 = context.viewModelsByApp();
+
+    // 当还有引用时 下次获取依然是同一个 当没有任何引用的时候 会执行清理vm
+    // final ViewModelHome viewModel1 = context.viewModelsByRef();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(title),
       ),
       body: Center(
         child: Column(
@@ -95,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-/// 模拟子控件
+/// 模拟子控件  可以在 state中直接使用
 class HomeFloatingButton extends StatefulWidget {
   const HomeFloatingButton({super.key});
 
@@ -104,7 +99,7 @@ class HomeFloatingButton extends StatefulWidget {
 }
 
 class _HomeFloatingButtonState extends State<HomeFloatingButton> {
-  //获取vm
+  //获取vm   可以在 state中直接使用
   late final vm = viewModelsOfState<ViewModelHome>();
 
   @override
