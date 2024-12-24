@@ -1,5 +1,7 @@
 A package for managing ViewModel that depends on anlifecycle. Similar to Androidx ViewModel.
 
+** Will rename to [an_viewmodel](https://pub.dev/packages/an_viewmodel)
+
 ## Usage
 
 #### 1.1 Prepare the lifecycle environment.

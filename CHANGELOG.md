@@ -1,3 +1,7 @@
+## 1.4.0
+
+* Will rename to [an_viewmodel](https://pub.dev/packages/an_viewmodel)
+
 ## 1.3.0
 
 * Provide extended viewModels for BuildContext to simplify usage.
